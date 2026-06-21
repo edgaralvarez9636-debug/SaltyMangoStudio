@@ -3648,4 +3648,178 @@
       };
     </script>
     <script src="assets/cs-widget.js" async></script>
+
+    <!-- ════════════════════════════════════════════════════════════════════
+         WIZARD DE RESERVA (Violet) — captura cost-protected ($0 LLM).
+         "Reservar" → datos (nombre/tel/email) → servicio → crea lead en CR Agent
+         + token de mini-cuenta → handoff a la mini-cuenta (slot + depósito).
+         Comparte identidad con el chat (localStorage) → Violet ya lo reconoce.
+         Estilo 100% del template (mismas vars / fuentes / tema). Edgar 2026-06-21.
+    ═══════════════════════════════════════════════════════════════════════ -->
+    <style>
+      .smr-overlay{position:fixed;inset:0;z-index:9998;display:none;align-items:center;justify-content:center;padding:20px;
+        background:rgba(8,9,10,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+      .smr-overlay.open{display:flex;}
+      .smr-card{position:relative;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;
+        background:linear-gradient(180deg,rgba(23,26,28,.98),rgba(14,16,17,.99));
+        border:1px solid var(--border-dark);border-radius:24px;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 30px 90px rgba(0,0,0,.5);
+        padding:28px 26px;color:var(--text);font-family:'Onest',sans-serif;
+        animation:smrIn .28s cubic-bezier(.2,.8,.2,1);}
+      @keyframes smrIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+      .smr-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);
+        font-size:26px;line-height:1;cursor:pointer;transition:color .2s;}
+      .smr-close:hover{color:var(--text);}
+      .smr-head{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+      .smr-avatar{width:46px;height:46px;border-radius:50%;overflow:hidden;flex-shrink:0;
+        border:1px solid var(--bronze-soft);background:var(--surface-2);}
+      .smr-avatar img{width:100%;height:100%;object-fit:cover;}
+      .smr-violet{font-family:'Instrument Sans',sans-serif;font-size:18px;font-weight:600;color:var(--text);margin:0;}
+      .smr-sub{font-size:12px;color:var(--muted);margin:2px 0 0;}
+      .smr-greet{font-size:15px;line-height:1.6;color:var(--text-soft);margin:0 0 18px;}
+      .smr-label{display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:0 0 6px;letter-spacing:.02em;}
+      .smr-input{width:100%;background:var(--surface-2);border:1px solid var(--border-dark);border-radius:12px;
+        padding:13px 14px;color:var(--text);font-size:15px;font-family:inherit;margin-bottom:14px;transition:border-color .2s,box-shadow .2s;}
+      .smr-input:focus{outline:none;border-color:var(--bronze);box-shadow:0 0 0 3px var(--bronze-soft);}
+      .smr-input::placeholder{color:var(--muted);}
+      .smr-btn{display:inline-flex;align-items:center;justify-content:center;width:100%;
+        background:var(--bronze);color:#1b1410;border:none;border-radius:12px;padding:14px 20px;
+        font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none;
+        transition:filter .2s,transform .1s;}
+      .smr-btn:hover{filter:brightness(1.07);}
+      .smr-btn:active{transform:translateY(1px);}
+      .smr-btn:disabled{opacity:.45;cursor:not-allowed;filter:none;}
+      .smr-btn-ghost{background:none;border:1px solid var(--border-dark);color:var(--text-soft);
+        border-radius:12px;padding:14px 18px;font-size:14px;font-family:inherit;cursor:pointer;transition:border-color .2s,color .2s;}
+      .smr-btn-ghost:hover{border-color:var(--bronze-soft);color:var(--text);}
+      .smr-actions{display:flex;gap:10px;margin-top:4px;}
+      .smr-actions .smr-btn{flex:1;}
+      .smr-err{color:#e88a8a;font-size:13px;margin:0 0 12px;min-height:0;}
+      .smr-loading{color:var(--muted);font-size:14px;text-align:center;padding:20px 0;}
+      .smr-services{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px;max-height:46vh;overflow-y:auto;padding-right:2px;}
+      .smr-svc{display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left;
+        background:var(--surface-2);border:1px solid var(--border-dark);border-radius:14px;padding:13px 15px;
+        cursor:pointer;transition:border-color .18s,background .18s;width:100%;font-family:inherit;color:var(--text);}
+      .smr-svc:hover{border-color:var(--bronze-soft);}
+      .smr-svc.sel{border-color:var(--bronze);background:var(--bronze-soft);box-shadow:0 0 0 1px var(--bronze) inset;}
+      .smr-svc-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;}
+      .smr-svc-meta{font-size:12px;color:var(--sage);margin-top:3px;}
+      .smr-svc-pick{flex-shrink:0;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--muted);transition:.18s;}
+      .smr-svc.sel .smr-svc-pick{border-color:var(--bronze);background:var(--bronze);box-shadow:inset 0 0 0 3px rgba(23,20,16,.9);}
+      .smr-success{text-align:center;padding:6px 0;}
+      .smr-check{width:58px;height:58px;border-radius:50%;background:var(--bronze-soft);color:var(--bronze);
+        font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid var(--bronze);}
+      .smr-fineprint{font-size:12px;color:var(--muted);margin:14px 0 0;}
+      @media(max-width:520px){.smr-card{padding:24px 18px;border-radius:20px;}}
+    </style>
+    <div id="smrOverlay" class="smr-overlay" role="dialog" aria-modal="true" aria-label="Reservar con Violet">
+      <div class="smr-card">
+        <button class="smr-close" id="smrClose" aria-label="Cerrar">&times;</button>
+        <div class="smr-head">
+          <span class="smr-avatar"><img src="/favicon-512x512.png" alt="Violet"></span>
+          <div><p class="smr-violet">Violet</p><p class="smr-sub">Asistente de Salty Mango Studio</p></div>
+        </div>
+        <div class="smr-step" data-step="1">
+          <p class="smr-greet">¡Hola, mi amor! 💛 Soy Violet. Para reservar tu cita necesito 4 cositas:</p>
+          <label class="smr-label" for="smrName">Tu nombre</label>
+          <input class="smr-input" id="smrName" type="text" placeholder="Nombre y apellido" autocomplete="name">
+          <label class="smr-label" for="smrPhone">Teléfono</label>
+          <input class="smr-input" id="smrPhone" type="tel" placeholder="787-000-0000" autocomplete="tel">
+          <label class="smr-label" for="smrEmail">Email</label>
+          <input class="smr-input" id="smrEmail" type="email" placeholder="tu@correo.com" autocomplete="email">
+          <p class="smr-err" id="smrErr1"></p>
+          <button class="smr-btn" id="smrNext">Continuar &rarr;</button>
+        </div>
+        <div class="smr-step" data-step="2" hidden>
+          <p class="smr-greet">¿Qué servicio buscas, bella? El depósito se descuenta del total del servicio 💛</p>
+          <div class="smr-services" id="smrServices"><p class="smr-loading">Cargando servicios…</p></div>
+          <p class="smr-err" id="smrErr2"></p>
+          <div class="smr-actions">
+            <button class="smr-btn-ghost" id="smrBack">&larr; Atrás</button>
+            <button class="smr-btn" id="smrSubmit" disabled>Reservar</button>
+          </div>
+        </div>
+        <div class="smr-step" data-step="3" hidden>
+          <div class="smr-success">
+            <div class="smr-check">&#10003;</div>
+            <p class="smr-greet" style="text-align:center">¡Listo, bella! 💛 Ya te tengo registrada. Aquí está tu cuenta para <strong>escoger tu horario</strong> y dejar tu depósito.</p>
+            <a class="smr-btn" id="smrGo" href="#" target="_blank" rel="noopener">Escoger mi horario &rarr;</a>
+            <p class="smr-fineprint">¿Dudas? Escríbeme en el chat 💬</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+    (function(){
+      var ORG = (window.CsConfig && window.CsConfig.orgId) || '1fcf8803-918a-4741-8abc-9edccad38011';
+      var BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:4001' : 'https://api.vectorai.digital';
+      var ov=document.getElementById('smrOverlay'), services=null, selected=null, loadedServices=false;
+      function show(n){ for(var i=1;i<=3;i++){ var el=ov.querySelector('[data-step="'+i+'"]'); el.hidden = (i!==n); } }
+      function open(){ ov.classList.add('open'); document.body.style.overflow='hidden'; show(1); setTimeout(function(){var n=document.getElementById('smrName'); if(n) n.focus();},120); }
+      function close(){ ov.classList.remove('open'); document.body.style.overflow=''; }
+      function money(c){ return '$'+(Math.round((c||0)/100)).toLocaleString('en-US'); }
+      // Interceptar TODOS los botones de GlossGenius → abrir el wizard
+      function hook(){ document.querySelectorAll('a[href*="glossgenius"]').forEach(function(a){ if(a.__smr) return; a.__smr=1; a.addEventListener('click', function(e){ e.preventDefault(); open(); }); }); }
+      hook(); document.addEventListener('DOMContentLoaded', hook);
+      document.getElementById('smrClose').addEventListener('click', close);
+      document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('open')) close(); });
+      // Paso 1 → 2
+      document.getElementById('smrNext').addEventListener('click', function(){
+        var name=document.getElementById('smrName').value.trim();
+        var phone=document.getElementById('smrPhone').value.replace(/\D/g,'');
+        var email=document.getElementById('smrEmail').value.trim();
+        var err=document.getElementById('smrErr1');
+        if(name.length<2){ err.textContent='Por favor escribe tu nombre 💛'; return; }
+        if(phone.length<10||phone.length>15){ err.textContent='Un teléfono válido, mi amor (10 dígitos).'; return; }
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent='Un email válido, por favor.'; return; }
+        err.textContent=''; show(2); loadServices();
+      });
+      document.getElementById('smrBack').addEventListener('click', function(){ show(1); });
+      function loadServices(){
+        if(loadedServices) return; loadedServices=true;
+        var box=document.getElementById('smrServices');
+        fetch(BASE+'/api/public/services/'+ORG).then(function(r){return r.json();}).then(function(d){
+          services=(d&&d.services)||[];
+          if(!services.length){ box.innerHTML='<p class="smr-loading">No hay servicios disponibles ahora.</p>'; return; }
+          box.innerHTML='';
+          services.forEach(function(s){
+            var meta=[]; if(s.base_price_cents) meta.push(money(s.base_price_cents));
+            if(s.requires_deposit && s.deposit_cents) meta.push('Depósito '+money(s.deposit_cents)+' · se descuenta');
+            var b=document.createElement('button'); b.type='button'; b.className='smr-svc';
+            b.innerHTML='<span><span class="smr-svc-name">'+(s.name||'')+'</span>'+(meta.length?'<span class="smr-svc-meta">'+meta.join(' · ')+'</span>':'')+'</span><span class="smr-svc-pick"></span>';
+            b.addEventListener('click', function(){
+              selected=s.id;
+              Array.prototype.forEach.call(box.children, function(c){ c.classList.remove('sel'); });
+              b.classList.add('sel'); document.getElementById('smrSubmit').disabled=false;
+            });
+            box.appendChild(b);
+          });
+        }).catch(function(){ box.innerHTML='<p class="smr-loading">No se pudieron cargar los servicios. Intenta de nuevo.</p>'; });
+      }
+      // Submit → booking-intake
+      document.getElementById('smrSubmit').addEventListener('click', function(){
+        if(!selected) return;
+        var btn=this, err=document.getElementById('smrErr2');
+        btn.disabled=true; btn.textContent='Reservando…'; err.textContent='';
+        fetch(BASE+'/api/public/cs/booking-intake',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            name:document.getElementById('smrName').value.trim(),
+            whatsapp:document.getElementById('smrPhone').value.trim(),
+            email:document.getElementById('smrEmail').value.trim(),
+            service_id:selected
+          })
+        }).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(res){
+          btn.disabled=false; btn.textContent='Reservar';
+          if(!res.ok||!res.j||!res.j.success){ err.textContent=(res.j&&res.j.message)||'No se pudo reservar. Intenta de nuevo.'; return; }
+          // Identidad compartida: el chat reconocerá al cliente (no re-pregunta los datos)
+          try{ localStorage.setItem('cs_contact_id_'+ORG, res.j.contact_id||''); localStorage.setItem('cs_conversation_id_'+ORG, res.j.conversation_id||''); }catch(e){}
+          document.getElementById('smrGo').setAttribute('href', res.j.mini_cuenta_url||'#');
+          show(3);
+        }).catch(function(){ btn.disabled=false; btn.textContent='Reservar'; err.textContent='Hubo un problemita. Intenta de nuevo, mi amor.'; });
+      });
+      // API global por si quieres abrirlo desde otro botón: window.SaltyReserve.open()
+      window.SaltyReserve={open:open,close:close};
+    })();
+    </script>
   </body></html>
