@@ -3778,7 +3778,7 @@
       function loadServices(){
         if(loadedServices) return; loadedServices=true;
         var box=document.getElementById('smrServices');
-        fetch(BASE+'/api/public/services/'+ORG).then(function(r){return r.json();}).then(function(d){
+        fetch(BASE+'/api/public/cs/services').then(function(r){return r.json();}).then(function(d){
           services=(d&&d.services)||[];
           if(!services.length){ box.innerHTML='<p class="smr-loading">No hay servicios disponibles ahora.</p>'; return; }
           box.innerHTML='';
