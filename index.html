@@ -2468,11 +2468,17 @@
       .ritual-panel:first-child {
       border-top: none;
       }
+      .ritual-panel-base {
+      opacity: 1;
+      transform: none;
+      }
       .ritual-panel-detail {
       inset: auto 0 0 0;
       width: 100%;
-      opacity: 1;
-      transform: translateY(0);
+      opacity: 0;
+      transform: translateY(100%);
+      transition: opacity 0.35s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
       background: linear-gradient(180deg,
       rgba(27, 31, 33, 0.10) 0%,
       rgba(33, 38, 39, 0.80) 100%);
@@ -2480,14 +2486,19 @@
       -webkit-backdrop-filter: blur(10px);
       border-left: none;
       }
-      .ritual-panel.is-revealed .ritual-panel-detail {
-      animation: smDetailIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+      .ritual-panel.sm-open .ritual-panel-detail {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
       }
-      .ritual-panel-base {
+      .ritual-panel.sm-open .ritual-panel-base {
       opacity: 0;
-      transform: none;
       }
       .ritual-panel-line {
+      width: 0;
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+      }
+      .ritual-panel.sm-open .ritual-panel-line {
       width: 100%;
       }
       }
@@ -2525,12 +2536,14 @@
     <style>
       /* override Salty Mango: 3 columnas para 9 paneles de servicio en desktop */
       @media (min-width: 1081px){ .ritual-panels-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
-      /* Touch tablets (sin hover): el detalle es VISIBLE por defecto y entra con animacion al scroll */
+      /* Touch tablets (sin hover): el detalle se abre AL TOCAR la tarjeta (.sm-open), no por defecto */
       @media (hover: none) and (min-width: 721px) and (max-width: 1080px) {
-        .ritual-panel .ritual-panel-detail { opacity: 1; transform: translateX(0); }
-        .ritual-panel .ritual-panel-base { opacity: 0; }
-        .ritual-panel .ritual-panel-line { width: 100%; }
-        .ritual-panel.is-revealed .ritual-panel-detail { animation: smDetailInX 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+        .ritual-panel .ritual-panel-base { opacity: 1; }
+        .ritual-panel .ritual-panel-detail { opacity: 0; transform: translateX(100%); transition: opacity 0.35s ease, transform 0.55s cubic-bezier(0.16,1,0.3,1); pointer-events: none; }
+        .ritual-panel.sm-open .ritual-panel-detail { opacity: 1; transform: translateX(0); pointer-events: auto; }
+        .ritual-panel.sm-open .ritual-panel-base { opacity: 0; }
+        .ritual-panel .ritual-panel-line { width: 0; }
+        .ritual-panel.sm-open .ritual-panel-line { width: 100%; }
       }
       /* keyframes de entrada del detalle (no esconden el contenido: terminan visibles) */
       @keyframes smDetailIn { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
@@ -3618,7 +3631,7 @@
         var grid = document.getElementById('smServicesGrid');
         if(!grid) return;
         // Click en cualquier tarjeta → abre el wizard con ese servicio pre-elegido (listener delegado).
-        if(!grid.__smbk){ grid.__smbk=1; grid.addEventListener('click', function(e){ var c=e.target.closest && e.target.closest('[data-service-id]'); if(c) openServiceBooking(c.getAttribute('data-service-id')); }); }
+        if(!grid.__smbk){ grid.__smbk=1; grid.addEventListener('click', function(e){ var c=e.target.closest && e.target.closest('[data-service-id]'); if(!c) return; if(window.matchMedia('(hover: none)').matches && !c.classList.contains('sm-open')){ Array.prototype.forEach.call(grid.querySelectorAll('.sm-open'), function(o){ o.classList.remove('sm-open'); }); c.classList.add('sm-open'); return; } openServiceBooking(c.getAttribute('data-service-id')); }); }
         fetch(BASE+'/api/public/cs/services').then(function(r){return r.json();}).then(function(d){
           var list = ((d && d.services) || []).filter(function(s){ return s && s.show_on_landing === true; });
           if(!list.length) return;
