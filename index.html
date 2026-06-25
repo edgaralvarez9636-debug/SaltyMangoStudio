@@ -2471,8 +2471,10 @@
       .ritual-panel-detail {
       inset: auto 0 0 0;
       width: 100%;
-      opacity: 1;
-      transform: translateX(0);
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+      transition-delay: 0.12s;
       background: linear-gradient(180deg,
       rgba(27, 31, 33, 0.10) 0%,
       rgba(33, 38, 39, 0.80) 100%);
@@ -2480,11 +2482,19 @@
       -webkit-backdrop-filter: blur(10px);
       border-left: none;
       }
+      .ritual-panel.is-revealed .ritual-panel-detail {
+      opacity: 1;
+      transform: translateY(0);
+      }
       .ritual-panel-base {
       opacity: 0;
       transform: none;
       }
       .ritual-panel-line {
+      width: 0;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+      }
+      .ritual-panel.is-revealed .ritual-panel-line {
       width: 100%;
       }
       }
@@ -2522,6 +2532,13 @@
     <style>
       /* override Salty Mango: 3 columnas para 9 paneles de servicio en desktop */
       @media (min-width: 1081px){ .ritual-panels-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } }
+      /* Touch tablets (sin hover): el detalle entra al hacer scroll, no por hover */
+      @media (hover: none) and (min-width: 721px) and (max-width: 1080px) {
+        .ritual-panel .ritual-panel-detail { opacity: 0; transform: translateX(100%); transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1), transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+        .ritual-panel.is-revealed .ritual-panel-detail { opacity: 1; transform: translateX(0); }
+        .ritual-panel.is-revealed .ritual-panel-base { opacity: 0; transform: translateX(-10px); }
+        .ritual-panel.is-revealed .ritual-panel-line { width: 100%; }
+      }
     </style>
     <!-- aura-ga4-start -->
     <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-2M6V79H761"></script>
@@ -2657,7 +2674,7 @@
 
               <div class="method-cards-grid">
                 <article class="method-card group cursor-pointer reveal-seq" style="transition-delay: 0.72s;">
-                  <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/2d71cc83-2714-4c6c-a432-9d2fd65fbcfe_800w.jpg" alt="Contrast recovery room" class="method-card-image reveal-img">
+                  <img src="https://pub-1a618ac2fe9744a99a3ae325a7b19fb7.r2.dev/assets/adgen/1782422097990-298b70a9-8183-4cf1-b3ff-47794bdba07e.png" alt="Cuidado facial — piel radiante" class="method-card-image reveal-img">
                   <div class="method-card-overlay"></div>
 
                   <div class="method-card-content">
@@ -2672,7 +2689,7 @@
                 </article>
 
                 <article class="method-card group cursor-pointer reveal-seq" style="transition-delay: 0.94s;">
-                  <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/96c79e30-2e87-4d9e-bf46-84e831415410_800w.jpg" alt="Mobility and breath area" class="method-card-image reveal-img">
+                  <img src="https://pub-1a618ac2fe9744a99a3ae325a7b19fb7.r2.dev/assets/adgen/1782422101455-6cc58a63-34cc-415d-9767-7dd8e97af927.png" alt="Cuidado corporal — renovación" class="method-card-image reveal-img">
                   <div class="method-card-overlay"></div>
 
                   <div class="method-card-content">
@@ -2849,7 +2866,7 @@
             <div class="outcomes-grid-v1">
               <article class="outcome-card-v1 reveal-fade" style="transition-delay: 0.20s;">
                 <div class="outcome-card-media-v1">
-                  <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/03e3bf84-a049-41e8-9238-c44b7ba8abde_800w.jpg" alt="Resultados Visibles" class="outcome-card-image-v1" />
+                  <img src="https://pub-1a618ac2fe9744a99a3ae325a7b19fb7.r2.dev/assets/adgen/1782422103250-e2c44411-4bd9-4e79-8e57-a95f95eed5f5.png" alt="Resultados Visibles" class="outcome-card-image-v1" />
                   <div class="outcome-card-frame-v1"></div>
                 </div>
                 <div class="outcome-card-body-v1">
@@ -2860,7 +2877,7 @@
               </article>
               <article class="outcome-card-v1 reveal-fade" style="transition-delay: 0.35s;">
                 <div class="outcome-card-media-v1">
-                  <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/ef35cb7d-0c6c-4939-b48e-97b474688382_1600w.jpg" alt="Atención Personalizada" class="outcome-card-image-v1" />
+                  <img src="https://pub-1a618ac2fe9744a99a3ae325a7b19fb7.r2.dev/assets/adgen/1782422104825-100acbcc-5590-4d60-b18c-8734b57df1bf.png" alt="Atención Personalizada" class="outcome-card-image-v1" />
                   <div class="outcome-card-frame-v1"></div>
                 </div>
                 <div class="outcome-card-body-v1">
@@ -2871,7 +2888,7 @@
               </article>
               <article class="outcome-card-v1 reveal-fade" style="transition-delay: 0.50s;">
                 <div class="outcome-card-media-v1">
-                  <img src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/702af30c-e0ea-4555-999f-176514db6a5c_800w.jpg" alt="Calidad Profesional" class="outcome-card-image-v1" />
+                  <img src="https://pub-1a618ac2fe9744a99a3ae325a7b19fb7.r2.dev/assets/adgen/1782422106581-689b5525-ca8c-465d-a2db-c74b6060d107.png" alt="Calidad Profesional" class="outcome-card-image-v1" />
                   <div class="outcome-card-frame-v1"></div>
                 </div>
                 <div class="outcome-card-body-v1">
