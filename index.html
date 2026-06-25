@@ -3672,11 +3672,11 @@
         if(ov.classList.contains('open')) return;              // no molestar si ya está agendando
         if(document.getElementById('smViolet')) return;
         var n=document.createElement('div'); n.id='smViolet';
-        n.setAttribute('style','position:fixed;left:20px;bottom:20px;z-index:9998;max-width:300px;display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:var(--surface-2,#17120f);border:1px solid var(--bronze-soft,rgba(201,169,106,.35));box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease');
+        n.setAttribute('style','position:fixed;right:20px;bottom:90px;z-index:2147483647;max-width:300px;display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:var(--surface-2,#17120f);border:1px solid var(--bronze-soft,rgba(201,169,106,.35));box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease');
         n.innerHTML='<img src="/favicon-512x512.png" alt="Violet" style="width:40px;height:40px;border-radius:50%;flex:0 0 auto;object-fit:cover;border:1px solid var(--bronze-soft,rgba(201,169,106,.4))"/>'
           +'<div style="flex:1;min-width:0">'
           +'<p style="margin:0 0 8px;font-size:13.5px;line-height:1.45;color:var(--text-1,#f4ece2)">¡Hola, mi amor! 💛 Soy <strong>Violet</strong>. ¿Buscas un tratamiento? Estoy aquí para ayudarte y agendarte.</p>'
-          +'<button id="smVioletGo" style="cursor:pointer;border:none;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;background:var(--bronze-soft,#c9a96a);color:#1a1410">Agéndate conmigo</button>'
+          +'<button id="smVioletGo" style="cursor:pointer;border:none;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;background:var(--bronze-soft,#c9a96a);color:var(--text-1,#f4ece2)">Agéndate conmigo</button>'
           +'</div>'
           +'<button id="smVioletX" aria-label="Cerrar" style="cursor:pointer;background:transparent;border:none;color:var(--text-2,#b8a890);font-size:18px;line-height:1;padding:0">&times;</button>';
         document.body.appendChild(n);
