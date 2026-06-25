@@ -2964,7 +2964,7 @@
                     <p class="membership-card-desc-v2">Para empezar tu láser en un área, pagando mensual sin un gran desembolso inicial.</p>
                   </div>
                   <div class="membership-card-actions-v2">
-                    <a href="#politicas" class="membership-plan-btn-v2 primary">Reservar mi espacio</a>
+                    <a href="#" class="membership-plan-btn-v2 primary" data-plan-slug="laser-esencial">Reservar mi espacio</a>
                   </div>
                   <div class="membership-card-bottom-v2">
                     <p class="membership-includes-v2">Incluye</p>
@@ -3000,7 +3000,7 @@
                     <p class="membership-card-desc-v2">Para quien va por todo su cuerpo: avanza por varias áreas a la vez, a precio de socia, durante todo el año.</p>
                   </div>
                   <div class="membership-card-actions-v2">
-                    <a href="#politicas" class="membership-plan-btn-v2 secondary">Reservar mi espacio</a>
+                    <a href="#" class="membership-plan-btn-v2 secondary" data-plan-slug="laser-club">Reservar mi espacio</a>
                   </div>
                   <div class="membership-card-bottom-v2">
                     <p class="membership-includes-v2">Incluye</p>
@@ -3744,13 +3744,43 @@
       var ORG = (window.CsConfig && window.CsConfig.orgId) || '1fcf8803-918a-4741-8abc-9edccad38011';
       var BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:4001' : 'https://api.vectorai.digital';
       var ov=document.getElementById('smrOverlay'), services=null, selected=null, loadedServices=false;
+      var membershipPlan=null;
+      var smrGreetEl=ov.querySelector('.smr-greet'), smrNextEl=document.getElementById('smrNext');
+      var GREET_BOOK=smrGreetEl?smrGreetEl.textContent:'', NEXT_BOOK=smrNextEl?smrNextEl.innerHTML:'';
+      function setMembershipUI(on){
+        if(smrGreetEl) smrGreetEl.textContent = on ? '¡Hola, mi amor! 💛 Soy Violet. Para apartar tu espacio de socia necesito 3 cositas:' : GREET_BOOK;
+        if(smrNextEl) smrNextEl.innerHTML = on ? 'Continuar al pago &rarr;' : NEXT_BOOK;
+      }
       function show(n){ for(var i=1;i<=3;i++){ var el=ov.querySelector('[data-step="'+i+'"]'); el.hidden = (i!==n); } }
       function open(){ ov.classList.add('open'); document.body.style.overflow='hidden'; show(1); setTimeout(function(){var n=document.getElementById('smrName'); if(n) n.focus();},120); }
-      function close(){ ov.classList.remove('open'); document.body.style.overflow=''; }
+      function close(){ ov.classList.remove('open'); document.body.style.overflow=''; membershipPlan=null; setMembershipUI(false); }
       function money(c){ return '$'+(Math.round((c||0)/100)).toLocaleString('en-US'); }
       // Interceptar TODOS los botones de GlossGenius → abrir el wizard
-      function hook(){ document.querySelectorAll('a[href*="glossgenius"]').forEach(function(a){ if(a.__smr) return; a.__smr=1; a.addEventListener('click', function(e){ e.preventDefault(); open(); }); }); }
+      function hook(){ document.querySelectorAll('a[href*="glossgenius"]').forEach(function(a){ if(a.__smr) return; a.__smr=1; a.addEventListener('click', function(e){ e.preventDefault(); membershipPlan=null; setMembershipUI(false); open(); }); }); }
       hook(); document.addEventListener('DOMContentLoaded', hook);
+      // Membresía: los botones "Reservar mi espacio" abren el MISMO formulario, pero al continuar
+      // van directo al Checkout de Stripe (suscripción) — sin escoger servicio.
+      function submitMembership(){
+        var name=document.getElementById('smrName').value.trim();
+        var phone=document.getElementById('smrPhone').value.trim();
+        var email=document.getElementById('smrEmail').value.trim();
+        var err=document.getElementById('smrErr1');
+        if(smrNextEl){ smrNextEl.disabled=true; smrNextEl.textContent='Procesando…'; }
+        err.textContent='';
+        fetch(BASE+'/api/public/cs/membership-intake',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ name:name, whatsapp:phone, email:email, plan_slug:membershipPlan })
+        }).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(res){
+          if(!res.ok||!res.j||!res.j.success||!res.j.checkout_url){
+            if(smrNextEl){ smrNextEl.disabled=false; smrNextEl.innerHTML='Continuar al pago &rarr;'; }
+            err.textContent=(res.j&&res.j.message)||'No se pudo procesar. Intenta de nuevo, mi amor.'; return;
+          }
+          window.location.href=res.j.checkout_url; // → Stripe Checkout (suscripción recurrente)
+        }).catch(function(){ if(smrNextEl){ smrNextEl.disabled=false; smrNextEl.innerHTML='Continuar al pago &rarr;'; } err.textContent='Hubo un problemita. Intenta de nuevo, mi amor.'; });
+      }
+      function openMembership(slug){ membershipPlan=slug; setMembershipUI(true); open(); }
+      function hookMembership(){ document.querySelectorAll('[data-plan-slug]').forEach(function(a){ if(a.__smrm) return; a.__smrm=1; a.addEventListener('click', function(e){ e.preventDefault(); openMembership(a.getAttribute('data-plan-slug')); }); }); }
+      hookMembership(); document.addEventListener('DOMContentLoaded', hookMembership);
       document.getElementById('smrClose').addEventListener('click', close);
       document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('open')) close(); });
       // Paso 1 → 2
@@ -3762,7 +3792,9 @@
         if(name.length<2){ err.textContent='Por favor escribe tu nombre 💛'; return; }
         if(phone.length<10||phone.length>15){ err.textContent='Un teléfono válido, mi amor (10 dígitos).'; return; }
         if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent='Un email válido, por favor.'; return; }
-        err.textContent=''; show(2); loadServices();
+        err.textContent='';
+        if(membershipPlan){ submitMembership(); return; }
+        show(2); loadServices();
       });
       document.getElementById('smrBack').addEventListener('click', function(){ show(1); });
       function loadServices(){
