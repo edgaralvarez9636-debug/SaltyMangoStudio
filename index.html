@@ -3545,7 +3545,7 @@
       var ORG = (window.CsConfig && window.CsConfig.orgId) || '1fcf8803-918a-4741-8abc-9edccad38011';
       var BASE = (location.hostname==='localhost'||location.hostname==='127.0.0.1') ? 'http://localhost:4001' : 'https://api.vectorai.digital';
       var ov=document.getElementById('smrOverlay'), services=null, selected=null, loadedServices=false;
-      var membershipPlan=null;
+      var membershipPlan=null, preselectedServiceId=null;
       var smrGreetEl=ov.querySelector('.smr-greet'), smrNextEl=document.getElementById('smrNext');
       var GREET_BOOK=smrGreetEl?smrGreetEl.textContent:'', NEXT_BOOK=smrNextEl?smrNextEl.innerHTML:'';
       function setMembershipUI(on){
@@ -3554,7 +3554,7 @@
       }
       function show(n){ for(var i=1;i<=3;i++){ var el=ov.querySelector('[data-step="'+i+'"]'); el.hidden = (i!==n); } }
       function open(){ ov.classList.add('open'); document.body.style.overflow='hidden'; show(1); setTimeout(function(){var n=document.getElementById('smrName'); if(n) n.focus();},120); }
-      function close(){ ov.classList.remove('open'); document.body.style.overflow=''; membershipPlan=null; setMembershipUI(false); }
+      function close(){ ov.classList.remove('open'); document.body.style.overflow=''; membershipPlan=null; preselectedServiceId=null; setMembershipUI(false); }
       function money(c){ return '$'+(Math.round((c||0)/100)).toLocaleString('en-US'); }
       // Interceptar TODOS los botones de GlossGenius → abrir el wizard
       function hook(){ document.querySelectorAll('a[href*="glossgenius"]').forEach(function(a){ if(a.__smr) return; a.__smr=1; a.addEventListener('click', function(e){ e.preventDefault(); membershipPlan=null; setMembershipUI(false); open(); }); }); }
@@ -3580,6 +3580,14 @@
         }).catch(function(){ if(smrNextEl){ smrNextEl.disabled=false; smrNextEl.innerHTML='Continuar al pago &rarr;'; } err.textContent='Hubo un problemita. Intenta de nuevo, mi amor.'; });
       }
       function openMembership(slug){ membershipPlan=slug; setMembershipUI(true); open(); }
+      // Click en un servicio de la vitrina → abre a Violet con ESE servicio pre-elegido (contextual).
+      function openServiceBooking(id){ preselectedServiceId=id; membershipPlan=null; setMembershipUI(false); open(); }
+      // Marca el servicio pre-elegido en el paso 2 (lo selecciona y habilita "Reservar").
+      function applyPreselect(){
+        if(!preselectedServiceId) return;
+        var box=document.getElementById('smrServices'); if(!box) return;
+        Array.prototype.forEach.call(box.children, function(c){ if(c.__svcId===preselectedServiceId) c.click(); });
+      }
       function hookMembership(){ document.querySelectorAll('[data-plan-slug]').forEach(function(a){ if(a.__smrm) return; a.__smrm=1; a.addEventListener('click', function(e){ e.preventDefault(); openMembership(a.getAttribute('data-plan-slug')); }); }); }
       hookMembership(); document.addEventListener('DOMContentLoaded', hookMembership);
 
@@ -3596,13 +3604,15 @@
       function loadLandingServices(){
         var grid = document.getElementById('smServicesGrid');
         if(!grid) return;
+        // Click en cualquier tarjeta → abre el wizard con ese servicio pre-elegido (listener delegado).
+        if(!grid.__smbk){ grid.__smbk=1; grid.addEventListener('click', function(e){ var c=e.target.closest && e.target.closest('[data-service-id]'); if(c) openServiceBooking(c.getAttribute('data-service-id')); }); }
         fetch(BASE+'/api/public/cs/services').then(function(r){return r.json();}).then(function(d){
           var list = ((d && d.services) || []).filter(function(s){ return s && s.show_on_landing === true; });
           if(!list.length) return;
           grid.innerHTML = list.map(function(s, i){
             var delay = (0.70 + i*0.12).toFixed(2);
             var tags = (s.tags || []).map(function(t){ return '<span>'+smEsc(t)+'</span>'; }).join('');
-            return '<article class="ritual-panel group reveal-fade editorial-panel" style="transition-delay: '+delay+'s">'
+            return '<article class="ritual-panel group reveal-fade editorial-panel" data-service-id="'+smEsc(s.id)+'" style="transition-delay: '+delay+'s;cursor:pointer">'
               + '<img src="'+smEsc(s.image_url)+'" alt="'+smEsc(s.name)+'" class="ritual-panel-image" />'
               + '<div class="ritual-panel-overlay"></div>'
               + '<div class="ritual-panel-base">'
@@ -3655,6 +3665,27 @@
       }
       loadMembershipPlans();
       loadLandingServices();
+
+      // Violet — burbuja sutil a los 30s (no bloquea, 1 vez por sesión, descartable). Respeta el template.
+      function showVioletNudge(){
+        try{ if(localStorage.getItem('sm_violet_nudge')==='1') return; }catch(e){}
+        if(ov.classList.contains('open')) return;              // no molestar si ya está agendando
+        if(document.getElementById('smViolet')) return;
+        var n=document.createElement('div'); n.id='smViolet';
+        n.setAttribute('style','position:fixed;left:20px;bottom:20px;z-index:9998;max-width:300px;display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:var(--surface-2,#17120f);border:1px solid var(--bronze-soft,rgba(201,169,106,.35));box-shadow:0 18px 50px rgba(0,0,0,.45);opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease');
+        n.innerHTML='<img src="/favicon-512x512.png" alt="Violet" style="width:40px;height:40px;border-radius:50%;flex:0 0 auto;object-fit:cover;border:1px solid var(--bronze-soft,rgba(201,169,106,.4))"/>'
+          +'<div style="flex:1;min-width:0">'
+          +'<p style="margin:0 0 8px;font-size:13.5px;line-height:1.45;color:var(--text-1,#f4ece2)">¡Hola, mi amor! 💛 Soy <strong>Violet</strong>. ¿Buscas un tratamiento? Estoy aquí para ayudarte y agendarte.</p>'
+          +'<button id="smVioletGo" style="cursor:pointer;border:none;border-radius:10px;padding:8px 14px;font-size:12.5px;font-weight:700;background:var(--bronze-soft,#c9a96a);color:#1a1410">Agéndate conmigo</button>'
+          +'</div>'
+          +'<button id="smVioletX" aria-label="Cerrar" style="cursor:pointer;background:transparent;border:none;color:var(--text-2,#b8a890);font-size:18px;line-height:1;padding:0">&times;</button>';
+        document.body.appendChild(n);
+        requestAnimationFrame(function(){ n.style.opacity='1'; n.style.transform='translateY(0)'; });
+        function dismiss(){ try{localStorage.setItem('sm_violet_nudge','1');}catch(e){} if(n.parentNode) n.parentNode.removeChild(n); }
+        document.getElementById('smVioletX').addEventListener('click', dismiss);
+        document.getElementById('smVioletGo').addEventListener('click', function(){ dismiss(); membershipPlan=null; preselectedServiceId=null; setMembershipUI(false); open(); });
+      }
+      setTimeout(showVioletNudge, 30000);
       document.getElementById('smrClose').addEventListener('click', close);
       document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('open')) close(); });
       // Paso 1 → 2
@@ -3668,7 +3699,7 @@
         if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent='Un email válido, por favor.'; return; }
         err.textContent='';
         if(membershipPlan){ submitMembership(); return; }
-        show(2); loadServices();
+        show(2); loadServices(); applyPreselect();
       });
       document.getElementById('smrBack').addEventListener('click', function(){ show(1); });
       function loadServices(){
@@ -3681,7 +3712,7 @@
           services.forEach(function(s){
             var meta=[]; if(s.base_price_cents) meta.push(money(s.base_price_cents));
             if(s.requires_deposit && s.deposit_cents) meta.push('Depósito '+money(s.deposit_cents)+' · se descuenta');
-            var b=document.createElement('button'); b.type='button'; b.className='smr-svc';
+            var b=document.createElement('button'); b.type='button'; b.className='smr-svc'; b.__svcId=s.id;
             b.innerHTML='<span><span class="smr-svc-name">'+(s.name||'')+'</span>'+(meta.length?'<span class="smr-svc-meta">'+meta.join(' · ')+'</span>':'')+'</span><span class="smr-svc-pick"></span>';
             b.addEventListener('click', function(){
               selected=s.id;
@@ -3690,6 +3721,7 @@
             });
             box.appendChild(b);
           });
+          applyPreselect(); // si vino de un click en la vitrina, marca ese servicio
         }).catch(function(){ box.innerHTML='<p class="smr-loading">No se pudieron cargar los servicios. Intenta de nuevo.</p>'; });
       }
       // Submit → booking-intake
