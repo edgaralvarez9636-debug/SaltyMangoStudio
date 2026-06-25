@@ -2952,80 +2952,8 @@
                   </div>
                 </div>
               </div>
-              <div class="membership-cards-v2">
-                <article class="membership-card-v2 featured reveal-fade" style="transition-delay: 0.45s;">
-                  <div class="membership-card-top-v2">
-                    <div class="membership-card-topbar-v2">
-                      <h3 class="membership-card-label-v2">Membresía</h3>
-                      <span class="membership-card-badge-v2">10 espacios</span>
-                    </div>
-                    <h4 class="membership-card-name-v2 font-head">Láser Esencial</h4>
-                    <div class="membership-price-v2"><strong>$55</strong><span>/ mes</span></div>
-                    <p class="membership-card-desc-v2">Para empezar tu láser en un área, pagando mensual sin un gran desembolso inicial.</p>
-                  </div>
-                  <div class="membership-card-actions-v2">
-                    <a href="#" class="membership-plan-btn-v2 primary" data-plan-slug="laser-esencial">Reservar mi espacio</a>
-                  </div>
-                  <div class="membership-card-bottom-v2">
-                    <p class="membership-includes-v2">Incluye</p>
-                    <p class="membership-includes-note-v2">Tu entrada al láser, a precio de socia.</p>
-                    <div class="membership-feature-list-v2">
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Un área a precio de socia (15% off)</span>
-                      </div>
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Pago mensual durante el tratamiento</span>
-                      </div>
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Prioridad de reserva en faciales</span>
-                      </div>
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Recordatorios de tus sesiones</span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-                <article class="membership-card-v2 reveal-fade" style="transition-delay: 0.45s;">
-                  <div class="membership-card-top-v2">
-                    <div class="membership-card-topbar-v2">
-                      <h3 class="membership-card-label-v2">Membresía</h3>
-                      
-                    </div>
-                    <h4 class="membership-card-name-v2 font-head">Láser Club</h4>
-                    <div class="membership-price-v2"><strong>$139</strong><span>/ mes</span></div>
-                    <p class="membership-card-desc-v2">Para quien va por todo su cuerpo: avanza por varias áreas a la vez, a precio de socia, durante todo el año.</p>
-                  </div>
-                  <div class="membership-card-actions-v2">
-                    <a href="#" class="membership-plan-btn-v2 secondary" data-plan-slug="laser-club">Reservar mi espacio</a>
-                  </div>
-                  <div class="membership-card-bottom-v2">
-                    <p class="membership-includes-v2">Incluye</p>
-                    <p class="membership-includes-note-v2">Para avanzar por varias zonas durante el año.</p>
-                    <div class="membership-feature-list-v2">
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Multi-área a precio de socia (22% off)</span>
-                      </div>
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Prioridad máxima de agenda</span>
-                      </div>
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Facial de cortesía por temporada</span>
-                      </div>
-                      <div class="membership-feature-row-v2">
-                        <iconify-icon icon="solar:check-circle-bold"></iconify-icon>
-                        <span>Beneficios exclusivos de temporada</span>
-                      </div>
-                    </div>
-                  </div>
-                </article>
-              </div>
+              <!-- Tarjetas de membresía generadas EN VIVO desde el sistema (editable por el tenant). -->
+              <div class="membership-cards-v2" id="smMembershipCards"></div>
             </div>
           </div>
         </div>
@@ -3781,6 +3709,42 @@
       function openMembership(slug){ membershipPlan=slug; setMembershipUI(true); open(); }
       function hookMembership(){ document.querySelectorAll('[data-plan-slug]').forEach(function(a){ if(a.__smrm) return; a.__smrm=1; a.addEventListener('click', function(e){ e.preventDefault(); openMembership(a.getAttribute('data-plan-slug')); }); }); }
       hookMembership(); document.addEventListener('DOMContentLoaded', hookMembership);
+
+      // Planes de membresía EN VIVO desde el sistema (editable por el tenant) → cero hardcode.
+      function smEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+      function smIntervalLabel(iv){ return iv==='year' ? 'año' : iv==='week' ? 'sem' : 'mes'; }
+      function loadMembershipPlans(){
+        var box = document.getElementById('smMembershipCards');
+        if(!box) return;
+        fetch(BASE+'/api/public/cs/membership-plans').then(function(r){return r.json();}).then(function(d){
+          var plans = (d && d.plans) || [];
+          if(!plans.length) return;
+          box.innerHTML = plans.map(function(p, i){
+            var featured = i===0 ? ' featured' : '';
+            var btnClass = i===0 ? 'primary' : 'secondary';
+            var badge = (p.founder_spaces_limit!=null) ? '<span class="membership-card-badge-v2">'+p.founder_spaces_limit+' espacios</span>' : '';
+            var perks = (p.perks||[]).map(function(perk){
+              return '<div class="membership-feature-row-v2"><iconify-icon icon="solar:check-circle-bold"></iconify-icon><span>'+smEsc(perk)+'</span></div>';
+            }).join('');
+            return '<article class="membership-card-v2'+featured+'">'
+              + '<div class="membership-card-top-v2">'
+              +   '<div class="membership-card-topbar-v2"><h3 class="membership-card-label-v2">Membresía</h3>'+badge+'</div>'
+              +   '<h4 class="membership-card-name-v2 font-head">'+smEsc(p.name)+'</h4>'
+              +   '<div class="membership-price-v2"><strong>$'+Math.round((p.price_cents||0)/100)+'</strong><span>/ '+smIntervalLabel(p.billing_interval)+'</span></div>'
+              +   (p.description ? '<p class="membership-card-desc-v2">'+smEsc(p.description)+'</p>' : '')
+              + '</div>'
+              + '<div class="membership-card-actions-v2"><a href="#" class="membership-plan-btn-v2 '+btnClass+'" data-plan-slug="'+smEsc(p.slug)+'">Reservar mi espacio</a></div>'
+              + '<div class="membership-card-bottom-v2"><p class="membership-includes-v2">Incluye</p><div class="membership-feature-list-v2">'+perks+'</div></div>'
+              + '</article>';
+          }).join('');
+          // El total de "espacios fundadores" del eyebrow también sale del sistema.
+          var totalSpaces = plans.reduce(function(s,p){ return s + (p.founder_spaces_limit||0); }, 0);
+          var eb = document.querySelector('.membership-eyebrow-v2');
+          if(eb && totalSpaces>0) eb.textContent = 'Membresía de Láser · '+totalSpaces+' espacios fundadores';
+          hookMembership(); // engancha los botones recién creados
+        }).catch(function(){ /* si falla, las tarjetas quedan vacías (no rompe la página) */ });
+      }
+      loadMembershipPlans();
       document.getElementById('smrClose').addEventListener('click', close);
       document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('open')) close(); });
       // Paso 1 → 2
