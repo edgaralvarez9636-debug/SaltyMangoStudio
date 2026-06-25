@@ -3685,7 +3685,7 @@
         document.getElementById('smVioletX').addEventListener('click', dismiss);
         document.getElementById('smVioletGo').addEventListener('click', function(){ dismiss(); membershipPlan=null; preselectedServiceId=null; setMembershipUI(false); open(); });
       }
-      setTimeout(showVioletNudge, 30000);
+      setTimeout(showVioletNudge, 15000);
       document.getElementById('smrClose').addEventListener('click', close);
       document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('open')) close(); });
       // Paso 1 → 2
