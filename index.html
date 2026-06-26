@@ -3774,7 +3774,7 @@
       loadMembershipPlans();
       loadLandingServices();
 
-      // Violet — burbuja sutil a los 30s (no bloquea, 1 vez por sesión, descartable). Respeta el template.
+      // Violet — burbuja sutil a los 10s (no bloquea, 1 vez por sesión, descartable). Respeta el template.
       function showVioletNudge(){
         try{ if(localStorage.getItem('sm_violet_nudge')==='1') return; }catch(e){}
         if(ov.classList.contains('open')) return;              // no molestar si ya está agendando
@@ -3793,7 +3793,7 @@
         document.getElementById('smVioletX').addEventListener('click', dismiss);
         document.getElementById('smVioletGo').addEventListener('click', function(){ dismiss(); membershipPlan=null; preselectedServiceId=null; setMembershipUI(false); open(); });
       }
-      setTimeout(showVioletNudge, 15000);
+      setTimeout(showVioletNudge, 10000);
       document.getElementById('smrClose').addEventListener('click', close);
       document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('open')) close(); });
       // Paso 1 → 2
