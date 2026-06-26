@@ -3527,6 +3527,35 @@
       .smr-check{width:58px;height:58px;border-radius:50%;background:var(--bronze-soft);color:var(--bronze);
         font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;border:1px solid var(--bronze);}
       .smr-fineprint{font-size:12px;color:var(--muted);margin:14px 0 0;}
+      /* Scrollbar tematizado (bronce) — Firefox + WebKit. */
+      .smr-card,.smr-services,.smr-variants{scrollbar-width:thin;scrollbar-color:var(--bronze-soft) transparent;}
+      .smr-card::-webkit-scrollbar,.smr-services::-webkit-scrollbar,.smr-variants::-webkit-scrollbar{width:8px;}
+      .smr-card::-webkit-scrollbar-track,.smr-services::-webkit-scrollbar-track,.smr-variants::-webkit-scrollbar-track{background:transparent;margin:6px 0;}
+      .smr-card::-webkit-scrollbar-thumb,.smr-services::-webkit-scrollbar-thumb,.smr-variants::-webkit-scrollbar-thumb{
+        background:var(--bronze-soft);border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
+      .smr-card::-webkit-scrollbar-thumb:hover,.smr-services::-webkit-scrollbar-thumb:hover,.smr-variants::-webkit-scrollbar-thumb:hover{
+        background:var(--bronze);background-clip:padding-box;}
+      /* Selector de zonas/paquete (láser=multi, camuflaje=único). */
+      .smr-variants{margin:0 0 14px;border-top:1px solid var(--border-dark);padding-top:14px;max-height:40vh;overflow-y:auto;padding-right:2px;}
+      .smr-variants[hidden]{display:none;}
+      .smr-vtitle{font-size:13px;font-weight:600;color:var(--text);margin:0 0 4px;}
+      .smr-vhint{font-size:11.5px;line-height:1.45;color:var(--muted);margin:0 0 12px;}
+      .smr-zone{display:flex;align-items:center;gap:11px;width:100%;text-align:left;font-family:inherit;
+        background:var(--surface-2);border:1px solid var(--border-dark);border-radius:12px;padding:11px 13px;margin-bottom:8px;
+        cursor:pointer;transition:border-color .16s,background .16s;}
+      .smr-zone:hover{border-color:var(--bronze-soft);}
+      .smr-zone.sel{border-color:var(--bronze);background:var(--bronze-soft);}
+      .smr-zone-box{flex-shrink:0;width:19px;height:19px;border:1.5px solid var(--muted);transition:.16s;}
+      .smr-zone-box.rad{border-radius:50%;}
+      .smr-zone-box.chk{border-radius:6px;}
+      .smr-zone.sel .smr-zone-box{border-color:var(--bronze);background:var(--bronze);box-shadow:inset 0 0 0 3px rgba(23,20,16,.9);}
+      .smr-zone-name{font-size:13.5px;color:var(--text);font-weight:500;line-height:1.3;}
+      .smr-zone-price{font-size:12px;color:var(--sage);flex-shrink:0;margin-left:auto;text-align:right;}
+      .smr-total{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:4px;padding-top:12px;
+        border-top:1px dashed var(--border-dark);font-size:13.5px;}
+      .smr-total-lbl{color:var(--text-soft);}
+      .smr-total-val{color:var(--text);font-weight:700;}
+      .smr-total-dep{display:block;font-size:11.5px;color:var(--sage);margin-top:2px;text-align:right;}
       @media(max-width:520px){.smr-card{padding:24px 18px;border-radius:20px;}}
     </style>
     <div id="smrOverlay" class="smr-overlay" role="dialog" aria-modal="true" aria-label="Reservar con Violet">
@@ -3550,6 +3579,7 @@
         <div class="smr-step" data-step="2" hidden>
           <p class="smr-greet">¿Qué servicio buscas, bella? El depósito se descuenta del total del servicio 💛</p>
           <div class="smr-services" id="smrServices"><p class="smr-loading">Cargando servicios…</p></div>
+          <div class="smr-variants" id="smrVariants" hidden></div>
           <p class="smr-err" id="smrErr2"></p>
           <div class="smr-actions">
             <button class="smr-btn-ghost" id="smrBack">&larr; Atrás</button>
@@ -3580,8 +3610,60 @@
       }
       function show(n){ for(var i=1;i<=3;i++){ var el=ov.querySelector('[data-step="'+i+'"]'); el.hidden = (i!==n); } }
       function open(){ ov.classList.add('open'); document.body.style.overflow='hidden'; show(1); setTimeout(function(){var n=document.getElementById('smrName'); if(n) n.focus();},120); }
-      function close(){ ov.classList.remove('open'); document.body.style.overflow=''; membershipPlan=null; preselectedServiceId=null; setMembershipUI(false); }
-      function money(c){ return '$'+(Math.round((c||0)/100)).toLocaleString('en-US'); }
+      function close(){ ov.classList.remove('open'); document.body.style.overflow=''; membershipPlan=null; preselectedServiceId=null; selected=null; resetVariants(); setMembershipUI(false); }
+      function money(c){ c=c||0; var d=c/100; return '$'+(c%100===0 ? d.toLocaleString('en-US') : d.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})); }
+      var refOptions=[], selectedVariants=[], curServiceObj=null;
+      function refsFor(id){ return refOptions.filter(function(o){ return o.parent_service_id===id; }); }
+      function stripParent(nm){ return String(nm||'').replace(/^.*—\s*/,''); }
+      function resetVariants(){ selectedVariants=[]; var p=document.getElementById('smrVariants'); if(p){ p.hidden=true; p.innerHTML=''; } }
+      function updateVariantTotal(opts){
+        var sum=0, dep=0, custom=false;
+        selectedVariants.forEach(function(vid){
+          var o=opts.filter(function(x){ return x.id===vid; })[0]; if(!o) return;
+          if(o.base_price_cents==null) custom=true; else { sum+=o.base_price_cents; dep+=(o.deposit_cents||0); }
+        });
+        var tv=document.getElementById('smrTotVal'), td=document.getElementById('smrTotDep');
+        if(tv) tv.textContent = (sum>0?money(sum):(custom?'':'$0')) + (custom?(sum>0?' + a evaluar':'A evaluar con Tatiana'):'');
+        if(td) td.textContent = dep ? ('Depósito '+money(dep)+' · se descuenta del total') : (custom?'Depósito a evaluar con Tatiana':'');
+        document.getElementById('smrSubmit').disabled = selectedVariants.length===0;
+      }
+      function renderVariants(s){
+        var panel=document.getElementById('smrVariants'); if(!panel) return;
+        var opts=refsFor(s.id);
+        selectedVariants=[];
+        if(!s.variant_mode || !opts.length){ panel.hidden=true; panel.innerHTML=''; document.getElementById('smrSubmit').disabled=false; return; }
+        var multi = s.variant_mode==='zones';
+        var boxCls = multi ? 'chk' : 'rad';
+        var title = multi ? 'Escoge tus zonas' : 'Escoge tu paquete';
+        var hint = multi ? 'Puedes marcar varias zonas — se suman. Tatiana ajusta tu paquete cuando te evalúe en persona 💛'
+                         : 'Selecciona una opción. Tatiana confirma todo cuando te evalúe 💛';
+        var rows = opts.map(function(o){
+          var price = (o.base_price_cents==null)
+            ? '<span class="smr-zone-price">A evaluar con Tatiana</span>'
+            : '<span class="smr-zone-price">'+money(o.base_price_cents)+'<span class="smr-total-dep">dep '+money(o.deposit_cents)+'</span></span>';
+          return '<button type="button" class="smr-zone" data-vid="'+smEsc(o.id)+'"><span class="smr-zone-box '+boxCls+'"></span>'
+               + '<span class="smr-zone-name">'+smEsc(stripParent(o.short_name||o.name))+'</span>'+price+'</button>';
+        }).join('');
+        panel.innerHTML = '<p class="smr-vtitle">'+title+'</p><p class="smr-vhint">'+hint+'</p>'+rows
+          + '<div class="smr-total"><span class="smr-total-lbl">Total</span><span style="text-align:right"><span class="smr-total-val" id="smrTotVal">$0</span><span class="smr-total-dep" id="smrTotDep"></span></span></div>';
+        panel.hidden=false;
+        Array.prototype.forEach.call(panel.querySelectorAll('.smr-zone'), function(z){
+          z.addEventListener('click', function(){
+            var vid=z.getAttribute('data-vid');
+            if(multi){
+              var idx=selectedVariants.indexOf(vid);
+              if(idx>=0){ selectedVariants.splice(idx,1); z.classList.remove('sel'); }
+              else { selectedVariants.push(vid); z.classList.add('sel'); }
+            } else {
+              selectedVariants=[vid];
+              Array.prototype.forEach.call(panel.querySelectorAll('.smr-zone'), function(o){ o.classList.remove('sel'); });
+              z.classList.add('sel');
+            }
+            updateVariantTotal(opts);
+          });
+        });
+        document.getElementById('smrSubmit').disabled = true; // hasta elegir ≥1 opción
+      }
       // Interceptar TODOS los botones de GlossGenius → abrir el wizard
       function hook(){ document.querySelectorAll('a[href*="glossgenius"]').forEach(function(a){ if(a.__smr) return; a.__smr=1; a.addEventListener('click', function(e){ e.preventDefault(); membershipPlan=null; setMembershipUI(false); open(); }); }); }
       hook(); document.addEventListener('DOMContentLoaded', hook);
@@ -3733,17 +3815,22 @@
         var box=document.getElementById('smrServices');
         fetch(BASE+'/api/public/cs/services').then(function(r){return r.json();}).then(function(d){
           services=(d&&d.services)||[];
+          refOptions=(d&&d.reference_options)||[];
           if(!services.length){ box.innerHTML='<p class="smr-loading">No hay servicios disponibles ahora.</p>'; return; }
           box.innerHTML='';
           services.forEach(function(s){
-            var meta=[]; if(s.base_price_cents) meta.push(money(s.base_price_cents));
-            if(s.requires_deposit && s.deposit_cents) meta.push('Depósito '+money(s.deposit_cents)+' · se descuenta');
+            var meta=[];
+            if(s.variant_mode && refsFor(s.id).length){ meta.push(s.variant_mode==='zones'?'Escoge tus zonas':'Escoge tu paquete'); }
+            else { if(s.base_price_cents) meta.push(money(s.base_price_cents));
+                   if(s.requires_deposit && s.deposit_cents) meta.push('Depósito '+money(s.deposit_cents)+' · se descuenta'); }
             var b=document.createElement('button'); b.type='button'; b.className='smr-svc'; b.__svcId=s.id;
             b.innerHTML='<span><span class="smr-svc-name">'+(s.name||'')+'</span>'+(meta.length?'<span class="smr-svc-meta">'+meta.join(' · ')+'</span>':'')+'</span><span class="smr-svc-pick"></span>';
             b.addEventListener('click', function(){
-              selected=s.id;
+              selected=s.id; curServiceObj=s;
               Array.prototype.forEach.call(box.children, function(c){ c.classList.remove('sel'); });
-              b.classList.add('sel'); document.getElementById('smrSubmit').disabled=false;
+              b.classList.add('sel');
+              if(s.variant_mode && refsFor(s.id).length){ renderVariants(s); }
+              else { resetVariants(); document.getElementById('smrSubmit').disabled=false; }
             });
             box.appendChild(b);
           });
@@ -3761,7 +3848,8 @@
             name:document.getElementById('smrName').value.trim(),
             whatsapp:document.getElementById('smrPhone').value.trim(),
             email:document.getElementById('smrEmail').value.trim(),
-            service_id:selected
+            service_id:selected,
+            selected_variant_ids:selectedVariants
           })
         }).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(res){
           btn.disabled=false; btn.textContent='Reservar';
